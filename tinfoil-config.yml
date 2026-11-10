@@ -1,4 +1,4 @@
-# The nudge brain's Tinfoil configuration, release v0.1.0. Rendered by nudge_infra.deploy from a
+# The nudge brain's Tinfoil configuration, release v0.1.1. Rendered by nudge_infra.deploy from a
 # values file; don't edit it by hand. Everything here is public and measured: a phone checks this release
 # before it grants the brain a user's key. What each part is for: infra/deploy/README.md in the brain's repo.
 cvm-version: "0.14.17"
@@ -39,7 +39,7 @@ containers:
       start_period: 2m
     env:
       - NUDGE_REPO: "gilly-bio/nudge-beta-config"
-      - NUDGE_RELEASE: "v0.1.0"
+      - NUDGE_RELEASE: "v0.1.1"
       - NUDGE_MODEL_BACKEND: "live"
       - NUDGE_MODEL_BASE: "http://model-proxy:3301/v1"
       - NUDGE_IMAGE_DIGEST: "sha256:2ac142212cf0e3fe35f9322db824b761f0a9e64685c454c4df79efd9fef452a6"
@@ -51,8 +51,8 @@ containers:
       - NUDGE_SWITCHES_URL: "https://pub-1caf30cc43704f7b9e3b967c23d63312.r2.dev/switches.json"
       - NUDGE_INVITES: "8da08df1dfc990ce23476d2b76d097f00bf1ae6f4496ba34d435760d9ffe0970,21cb046cb320284b8fa4ea8228573515210e9b53aea5fc21bf73ba04e2fee71c,756facef5809c09ad3561ec5aceadb06e1a20794253f86f774f51dd90ce5fc33"
       - NUDGE_SWITCH_KEYS: "{}"
-      - NUDGE_RELEASE_KEYS: "{\"a6538e1ffd3ac87f\": \"WUTXyyCaqvL4rwSXLqqE+HITCv/hU//2P9HTpfLREIY=\"}"
-      - NUDGE_LOG_KEYS: "{\"a6538e1ffd3ac87f\": \"WUTXyyCaqvL4rwSXLqqE+HITCv/hU//2P9HTpfLREIY=\"}"
+      - NUDGE_RELEASE_KEYS: "{\"9ae045faed1ea7c8\": \"L9vXE9hjJjZXKS/oWk96bhoEFsA5ixeIu5MAtCTR1xI=\"}"
+      - NUDGE_LOG_KEYS: "{\"9ae045faed1ea7c8\": \"L9vXE9hjJjZXKS/oWk96bhoEFsA5ixeIu5MAtCTR1xI=\"}"
     secrets:  # NUDGE_SECRET_<NAME>, base64 (nudge_infra.opsecrets)
       - NUDGE_SECRET_OPS_KEY
       - NUDGE_SECRET_TINFOIL_KEY
