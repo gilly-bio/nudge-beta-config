@@ -1,18 +1,85 @@
-# Tinfoil Container Configuration
-# For updates: edit this file, commit, run the workflow (e.g., v0.0.2)
-cvm-version: 0.14.7
+# The nudge brain's Tinfoil configuration, release v0.1.0. Rendered by nudge_infra.deploy from a
+# values file; don't edit it by hand. Everything here is public and measured: a phone checks this release
+# before it grants the brain a user's key. What each part is for: infra/deploy/README.md in the brain's repo.
+cvm-version: "0.14.17"
 cpus: 2
 memory: 8192
 
+# Our keyserver (tinfoilsh/keyserver). It releases the secrets below at every boot, only to a release and
+# domain our approver let in, or the enclave doesn't boot.
+keyserver-url: "https://keys.gillynudge.com"
+
+networks:
+  brain-out:  # every host the brain can reach; adding one is a release
+    egress: allowlist
+    allow:
+      - "80b36accfd5e10673ef2f7b953b9f0cd.r2.cloudflarestorage.com"
+      - "pub-1caf30cc43704f7b9e3b967c23d63312.r2.dev"
+  inference-out:  # the inference router, and what verifying it takes
+    egress: allowlist
+    allow:
+      - "inference.tinfoil.sh"
+      - "atc.tinfoil.sh"
+      - "github-proxy.tinfoil.sh"
+      - "kds-proxy.tinfoil.sh"
+  model:  # closed: the brain reaches the proxy here, and nothing else
+    egress: closed  # spelled out: Tinfoil's validator refuses an empty network ({})
+
 containers:
-  - name: "hello-world"
-    image: "ghcr.io/tinfoilsh/tinfoil-containers-hello-world@sha256:c943b1cab16409e2e686ad71deab30364c27421852cdd6b3080df1c7a38331ed"
+  - name: brain
+    image: "ghcr.io/gilly-bio/nudge-beta-brain@sha256:2ac142212cf0e3fe35f9322db824b761f0a9e64685c454c4df79efd9fef452a6"
+    networks: [brain-out, model]
+    restart: always
+    tmpfs:
+      /tmp: "size=64m"
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8080/v1/instance', timeout=3)"]
+      interval: 30s
+      timeout: 5s
+      start_period: 2m
     env:
-      - MESSAGE: "Hello from Tinfoil"
-    secrets:
-      - GREETING_TOKEN
+      - NUDGE_REPO: "gilly-bio/nudge-beta-config"
+      - NUDGE_RELEASE: "v0.1.0"
+      - NUDGE_MODEL_BACKEND: "live"
+      - NUDGE_MODEL_BASE: "http://model-proxy:3301/v1"
+      - NUDGE_IMAGE_DIGEST: "sha256:2ac142212cf0e3fe35f9322db824b761f0a9e64685c454c4df79efd9fef452a6"
+      - NUDGE_STORE: "s3"
+      - NUDGE_S3_ENDPOINT: "https://80b36accfd5e10673ef2f7b953b9f0cd.r2.cloudflarestorage.com"
+      - NUDGE_S3_BUCKET: "nudge-beta"
+      - NUDGE_S3_REGION: "auto"
+      - NUDGE_RELEASE_LOG: "https://pub-1caf30cc43704f7b9e3b967c23d63312.r2.dev/"
+      - NUDGE_SWITCHES_URL: "https://pub-1caf30cc43704f7b9e3b967c23d63312.r2.dev/switches.json"
+      - NUDGE_INVITES: "8da08df1dfc990ce23476d2b76d097f00bf1ae6f4496ba34d435760d9ffe0970,21cb046cb320284b8fa4ea8228573515210e9b53aea5fc21bf73ba04e2fee71c,756facef5809c09ad3561ec5aceadb06e1a20794253f86f774f51dd90ce5fc33"
+      - NUDGE_SWITCH_KEYS: "{}"
+      - NUDGE_RELEASE_KEYS: "{\"a6538e1ffd3ac87f\": \"WUTXyyCaqvL4rwSXLqqE+HITCv/hU//2P9HTpfLREIY=\"}"
+      - NUDGE_LOG_KEYS: "{\"a6538e1ffd3ac87f\": \"WUTXyyCaqvL4rwSXLqqE+HITCv/hU//2P9HTpfLREIY=\"}"
+    secrets:  # NUDGE_SECRET_<NAME>, base64 (nudge_infra.opsecrets)
+      - NUDGE_SECRET_OPS_KEY
+      - NUDGE_SECRET_TINFOIL_KEY
+      - NUDGE_SECRET_S3_CREDENTIALS
+  - name: model-proxy
+    image: "ghcr.io/tinfoilsh/tinfoil-proxy@sha256:f048419da6d3df1abe80628e960b87e46d12f97bac5e10535f8164c0242ee18f"
+    command: ["--bind", "0.0.0.0", "--port", "3301", "--host", "inference.tinfoil.sh", "--repo", "tinfoilsh/confidential-model-router", "--allowed-host", "model-proxy"]
+    networks: [inference-out, model]
+    restart: always
 
 shim:
   upstream-port: 8080
-  paths:
-    - /*
+  upstream-container: brain
+  paths:  # nothing else is reachable
+    - /v1/instance
+    - /v1/grant
+    - /v1/revoke
+    - /v1/status
+    - /v1/ingest
+    - /v1/sync
+    - /v1/mail/address
+    - /v1/connect
+    - /v1/disconnect
+    - /v1/pair
+    - /v1/pair/fetch
+    - /v1/recovery
+    - /v1/recovery/remove
+    - /v1/recover/fetch
+    - /v1/devices
+    - /v1/devices/remove
